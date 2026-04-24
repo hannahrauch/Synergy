@@ -4,15 +4,16 @@
 MPU6050 mpu;
 const int motorPin = 3;
 
-float motionThreshold = 0.02;
+const float motionThreshold = 0.05;
 float prevAccel = 0;
+bool hasPrevAccel = false;
 float smoothedDelta = 0;
 const float smoothing = 0.3;
 
-const int stopDelay = 150;
+const unsigned long stopDelay = 250;
 unsigned long lastMotionTime = 0;
 unsigned long lastSampleTime = 0;
-const int sampleInterval = 50; // ms between reads
+const unsigned long sampleInterval = 50; // ms between reads
 
 bool motorOn = false;
 
@@ -44,12 +45,19 @@ void loop() {
     float z = az / 16384.0;
 
     float accel = sqrt(x * x + y * y + z * z);
-    float delta = abs(accel - prevAccel);
+    if (!hasPrevAccel) {
+      prevAccel = accel;
+      hasPrevAccel = true;
+    }
 
+    float delta = abs(accel - prevAccel);
     smoothedDelta = (smoothing * delta) + ((1.0 - smoothing) * smoothedDelta);
     prevAccel = accel;
 
-    Serial.println(smoothedDelta);
+    Serial.print("motion: ");
+    Serial.print(smoothedDelta);
+    Serial.print("  state: ");
+    Serial.println(motorOn ? "ON" : "OFF");
 
     if (smoothedDelta > motionThreshold) {
       lastMotionTime = now;
